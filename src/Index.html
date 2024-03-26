@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phaser Game with Score and Challenging Levels</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align the game to the top of the window */
+            height: 100vh;
+            background-color: #ffffff; /* Set a background color for better visibility */
+        }
+
+        canvas {
+            margin-top: 20px; /* Add some margin to the top of the canvas */
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+</head>
+<body>
+
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 360,
+        height: 640,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 0 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    const game = new Phaser.Game(config);
+
+    let player;
+    let score = 0;
+    let itemSize = 20;
+    let cursors;
+    let spacePressed = false;
+    let scoreText;
+    let startText;
+    let itemSpeed = 100; // Initial falling speed
+    let playerSpeed = 200; // Initial player movement speed
+
+    function preload() {
+        this.load.image('player', 'assets/player.png');
+        this.load.image('item', 'assets/item.png');
+    }
+
+    function create() {
+        this.cameras.main.setBackgroundColor('#f0f0f0');
+
+        player = this.physics.add.sprite(this.sys.game.config.width / 2, this.sys.game.config.height - 50, 'player');
+        player.setCollideWorldBounds(true);
+
+        scoreText = this.add.text(10, 10, 'Score: 0', { fontFamily: 'Arial', fontSize: 20, color: '#000000' });
+        startText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'Press SPACE to Begin', { fontFamily: 'Arial', fontSize: 30, color: '#000000' });
+        startText.setOrigin(0.5);
+
+        cursors = this.input.keyboard.createCursorKeys();
+
+        this.physics.add.collider(player, this.physics.world.bounds, playerCollide, null, this);
+
+        this.input.keyboard.once('keydown-SPACE', () => {
+            spacePressed = true;
+            startText.setVisible(false);
+        });
+    }
+
+    function update(time, delta) {
+        if (spacePressed) {
+            // Generate items continuously
+            if (Math.random() < 0.02) {
+                const itemX = Phaser.Math.Between(itemSize, this.sys.game.config.width - itemSize);
+                const item = this.physics.add.sprite(itemX, 0, 'item');
+                item.setVelocityY(itemSpeed);
+                this.physics.add.collider(player, item, itemCollide, null, this);
+            }
+
+            // Increase falling speed and player speed based on score
+            if (score >= 50 && score < 100) {
+                itemSpeed = 150;
+                playerSpeed = 250;
+            } else if (score >= 100) {
+                itemSpeed = 200;
+                playerSpeed = 300;
+            }
+        }
+
+        if (cursors.left.isDown) {
+            player.setVelocityX(-playerSpeed);
+        } else if (cursors.right.isDown) {
+            player.setVelocityX(playerSpeed);
+        } else {
+            player.setVelocityX(0);
+        }
+
+        scoreText.setText('Score: ' + score);
+    }
+
+    function playerCollide(player, bounds) {
+        // Player collides with game bounds
+        player.setVelocityX(0); // Stop player movement
+    }
+
+    function itemCollide(player, item) {
+        item.destroy(); // Destroy falling item
+        score += 10; // Increase score
+    }
+</script>
+
+</body>
+</html>
